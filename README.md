@@ -8,9 +8,10 @@ A template for C library project.
 - [x] Build profiles for debug and release.
 - [x] Cross-platform support.
 - [x] Unit test support. (Unit test framework not included)
+- [x] Run tests in parallel with `make -j`.
 - [x] Documentation support. (Doxide)
 - [x] Experimental code coverage support. (Doxide with gcov/llvm-cov)
-- [ ] Dependency management.
+- [x] Dependency management. (Configuring the `LDFLAGS` and `LDLIBS` is enough for most cases)
 
 
 ## Project Structure
