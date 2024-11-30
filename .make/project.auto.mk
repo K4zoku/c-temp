@@ -58,7 +58,7 @@ OBJ:=$(patsubst $(SOURCE_DIRECTORY)/%.c,$(OBJECT_DIRECTORY)/%.o,$(SRC))
 
 TEST_SRC:=$(call rwildcard,$(TEST_DIRECTORY),*.c)
 TEST_OBJ:=$(patsubst $(TEST_DIRECTORY)/%.c,$(OBJECT_DIRECTORY)/%.o,$(TEST_SRC))
-TEST_BIN:=$(patsubst $(TEST_DIRECTORY)/%.c,$(TEST_BINARY_DIRECTORY)/%,$(TEST_SRC))
+TEST_BIN:=$(patsubst $(OBJECT_DIRECTORY)/%.o,$(TEST_BINARY_DIRECTORY)/%,$(TEST_OBJ))
 
 ifeq ($(TYPE),bin)
     TEST_OBJ:=$(OBJ) $(TEST_OBJ)
@@ -83,17 +83,15 @@ $(TARGET): $(OBJ)
 	@mkdir -p $(@D)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-$(TEST_OBJ): $(TEST_SRC)
+$(OBJECT_DIRECTORY)/%.o: $(TEST_DIRECTORY)/%.c
 	@mkdir -p $(@D)
 	$(CC) $(TEST_CPPFLAGS) $(TEST_CFLAGS) -c -o $@ $<
 
-ifeq ($(TYPE),lib)
-$(TEST_BIN): $(TARGET) $(TEST_OBJ)
-else
-$(TEST_BIN): $(TEST_OBJ)
-endif
+
+$(TEST_BINARY_DIRECTORY)/%: $(OBJECT_DIRECTORY)/%.o
 	@mkdir -p $(@D)
-	$(CC) $(TEST_CPPFLAGS) $(TEST_CFLAGS) $(TEST_LDFLAGS) -o $@ $^ $(TEST_LDLIBS)
+	@echo "Building test '$(notdir $<)'..."
+	$(CC) $(TEST_CPPFLAGS) $(TEST_CFLAGS) $(TEST_LDFLAGS) -o $@ $(OBJECT_DIRECTORY)/$*.o $(TEST_LDLIBS)
 
 ifeq ($(TYPE),bin)
 run: $(TARGET)
@@ -104,14 +102,16 @@ IMPLICIT_PHONY+=run
 endif
 
 # Build tests binary
-tests: $(TEST_BIN)
+tests: $(TEST_OBJ) $(TEST_BIN)
 
 IMPLICIT_PHONY+=tests
 
-# Run tests binary
-test: $(TEST_BIN)
-	@echo "Executing '$(notdir $<)'..."
+test_%: $(TEST_BINARY_DIRECTORY)/%
+	@echo "Running test '$(notdir $<)'..."
 	@$(abspath $<)
+	@echo "Test '$(notdir $<)' passed."
+
+test: $(patsubst $(TEST_BINARY_DIRECTORY)/%,test_%,$(TEST_BIN))
 
 IMPLICIT_PHONY+=test
 
